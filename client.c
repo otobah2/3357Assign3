@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <stdlib.h>
+#include "udp_client.h"
 #include "dns_lib.h"
 
 int main(int argc, char** argv)
@@ -21,6 +22,9 @@ int main(int argc, char** argv)
   char* type = "A";
   char* dnsserver;
   char* query;
+  host_t server_address;
+  dns_message_t* query_msg;
+  dns_message_t* response_msg;
   static struct option long_options[]=
   {
     {"type", required_argument, 0, 't'},
@@ -53,16 +57,27 @@ int main(int argc, char** argv)
     printf("Expected Syntax: nsl [TYPE] DNSSERVER QUERY\n");
     exit(EXIT_FAILURE);
   }
-  else
-  {
-    dnsserver = argv[optind];
-    query = argv[optind+1];
-  }
+  dnsserver = argv[optind];
+  query = argv[optind+1];
   
    /*//print options
    printf("Type       : %s\n", type);
    printf("DNS Server : %s\n", dnsserver);
    printf("Query      : %s\n", query);*/
+  
+  //Create UDP client socket
+  int sockfd = create_client_socket(dnsserver, "53", &server_address);
+  
+  //Send DNS query through socket
+  query_msg = create_dns_query(query, type);
+  send_message(sockfd, (message_t*)query_msg, &server_address);
+  
+  //Receive DNS response
+  response_msg = (dns_message_t*) receive_message(sockfd, &server_address);
+  print_dns_response(response_msg);
+  
+  //Close socket
+  close(sockfd);
 
    exit(EXIT_SUCCESS);
 }

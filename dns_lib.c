@@ -56,3 +56,8 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype)
     
     return msg;
 }
+
+void print_dns_response(dns_message_t* response)
+{
+    
+}
