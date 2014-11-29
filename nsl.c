@@ -60,10 +60,10 @@ int main(int argc, char** argv)
   dnsserver = argv[optind];
   query = argv[optind+1];
   
-   /*//print options
-   printf("Type       : %s\n", type);
-   printf("DNS Server : %s\n", dnsserver);
-   printf("Query      : %s\n", query);*/
+  /*//print options
+  printf("Type       : %s\n", type);
+  printf("DNS Server : %s\n", dnsserver);
+  printf("Query      : %s\n", query);*/
   
   //Create UDP client socket
   int sockfd = create_client_socket(dnsserver, "53", &server_address);
@@ -79,6 +79,6 @@ int main(int argc, char** argv)
   //Close socket
   close(sockfd);
 
-   exit(EXIT_SUCCESS);
+  exit(EXIT_SUCCESS);
 }
 

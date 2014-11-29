@@ -59,5 +59,47 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype)
 
 void print_dns_response(dns_message_t* response)
 {
+    uint8_t qr = response->flags >> 7;
+    uint8_t rcode = response->flags & 00001111;
+    uint16_t an_count = ntohs(response->an_count);
     
+    //Check qr to ensure message is a response
+    if (qr != 1)
+    {
+        printf("Error: Invalid Response\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    //Check rcode for error
+    switch (rcode)
+    {
+        //No error condition
+        case 0:
+            break;
+        //Format error
+        case 1:
+            printf("Error: Format Error\n");
+            exit(EXIT_FAILURE);
+        //Server failure
+        case 2:
+            printf("Error: Server Failure.\n");
+            exit(EXIT_FAILURE);
+        //Name error
+        case 3:
+            printf("Error: Name Error\n");
+            exit(EXIT_FAILURE);
+        //Not implemented
+        case 4:
+            printf("Error: Not implemented\n");
+            exit(EXIT_FAILURE);
+        case 5:
+            printf("Error: Refused\n");
+            exit(EXIT_FAILURE);
+        //Undefined rcode
+        default:
+            printf("Erro: Undefined Error\n");
+            exit(EXIT_FAILURE);
+    }
 }
+
+
