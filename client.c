@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <stdlib.h>
+#include "dns_lib.h"
 
 int main(int argc, char** argv)
 {
@@ -41,11 +42,10 @@ int main(int argc, char** argv)
         //Error message handled, exit
         exit(EXIT_FAILURE);
         break;
-    }//end of switch statements
-  }//end of input while loop
+    }
+  }
 
   //handle non-option arguments
-  //
   /*if there are no arguments left, neither server nor query were given*/
   if(optind == argc || optind == argc-1)
   {
@@ -59,10 +59,11 @@ int main(int argc, char** argv)
     query = argv[optind+1];
   }
   
-   //print options
+   /*//print options
    printf("Type       : %s\n", type);
    printf("DNS Server : %s\n", dnsserver);
-   printf("Query      : %s\n", query);
+   printf("Query      : %s\n", query);*/
 
    exit(EXIT_SUCCESS);
-}//end of main
+}
+

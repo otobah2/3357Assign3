@@ -41,9 +41,7 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype)
     //Copy domain name in buffer
     msg->buffer[0] = qname_length;
     for (int i = 1; i <= qname_length + 1; ++i)
-    {
         msg->buffer[i] = domain_name[i-1];
-    }
     
     //Set qtype
     msg->buffer[qname_length+3] = qtype[0];
@@ -52,6 +50,9 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype)
     //Set qclass
     msg->buffer[qname_length+5] = 'I';
     msg->buffer[qname_length+6] = 'N';
+    
+    //Update length
+    msg->length = 18 + (uint32_t)qname_length;
     
     return msg;
 }
