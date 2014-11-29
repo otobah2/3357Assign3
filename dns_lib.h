@@ -31,6 +31,7 @@ typedef struct
 
 //Functions
 dns_message_t* create_dns_query(char* domain_name, char* qtype);
+void handle_rcode(uint8_t rcode);
 void print_dns_response(dns_message_t* response);
 
 #endif
