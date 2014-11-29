@@ -99,8 +99,8 @@ void handle_rcode(uint8_t rcode)
 void print_dns_response(dns_message_t* response)
 {
     int i;
-    uint8_t qr = response->flags >> 7;
-    uint8_t rcode = response->flags & 00001111;
+    uint8_t qr = response->flags >> 15;
+    uint8_t rcode = response->flags & 0000000000001111;
     uint16_t an_count = ntohs(response->an_count);
     
     //Check QR to ensure message is a response
@@ -132,11 +132,14 @@ void print_dns_response(dns_message_t* response)
     memcpy(&rdlength, &response->buffer[name_length+11], 2);
     char* rdata = malloc(rdlength * sizeof(char) + 1);
     
+    printf("rdlength: %d\n", rdlength);
+    
     for (i = 0; i < rdlength; ++i)
         rdata[i] = response->buffer[name_length+13+i];
     rdata[rdlength] = '\0';
     
     //Print response (will be interpreted by a function taking TYPE, which will determine RDATA)
+    printf("type: %s\n", type);
     printf("Name: %s\n", name);
     printf("RDATA: %s\n", rdata);
 }
