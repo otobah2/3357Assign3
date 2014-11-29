@@ -30,8 +30,9 @@ typedef struct
 } dns_message_t;
 
 //Functions
-dns_message_t* create_dns_query(char* domain_name, char* qtype);
+uint16_t qtype_value(char* qtype);
 void handle_rcode(uint8_t rcode);
+dns_message_t* create_dns_query(char* domain_name, char* qtype);
 void print_dns_response(dns_message_t* response);
 
 #endif

@@ -15,9 +15,43 @@
 #include "dns_lib.h"
 #include "udp_sockets.h"
 
+// Returns the value of the specified qtype name
+//
+uint16_t qtype_value(char* qtype)
+{
+    if (strcmp(qtype, "A"))
+        return 1;
+    if (strcmp(qtype, "NS"))
+        return 2;
+    if (strcmp(qtype, "CNAME"))
+        return 5;
+    if (strcmp(qtype, "MX"))
+        return 15;
+    if (strcmp(qtype, "TXT"))
+        return 16;
+    return 0;
+}
+
+// Returns the name of the specified qtype value
+//
+char* qtype_name(int qtype)
+{
+    if (qtype == 1)
+        return "A";
+    if (qtype == 2)
+        return "NS";
+    if (qtype == 5)
+        return "CNAME";
+    if (qtype == 15)
+        return "MX";
+    if (qtype == 16)
+        return "TXT";
+    return NULL;
+}
+
 //  Initializes a DNS query message with specified question
 //
-dns_message_t* create_dns_query(char* domain_name, char* qtype)
+dns_message_t* create_dns_query(char* domain_name, char* qtype_name)
 {
     dns_message_t* msg = (dns_message_t*) create_message();
     
@@ -44,12 +78,12 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype)
         msg->buffer[i] = domain_name[i-1];
     
     //Set qtype
-    msg->buffer[qname_length+3] = qtype[0];
-    msg->buffer[qname_length+4] = qtype[1];
+    uint16_t qtype = htons(qtype_value(qtype_name));
+    memcpy(&msg->buffer[qname_length+3], &qtype, 2);
     
     //Set qclass
-    msg->buffer[qname_length+5] = 'I';
-    msg->buffer[qname_length+6] = 'N';
+    uint16_t qclass = htons(1);
+    memcpy(&msg->buffer[qname_length+5], &qclass, 2);
     
     //Update length
     msg->length = 18 + (uint32_t)qname_length;
@@ -64,30 +98,30 @@ void handle_rcode(uint8_t rcode)
     //Check rcode and print appropriate error message
     switch (rcode)
     {
-            //No error
+        //No error
         case 0:
             break;
-            //Format error
+        //Format error
         case 1:
             printf("Error: Format Error\n");
             exit(EXIT_FAILURE);
-            //Server failure
+        //Server failure
         case 2:
             printf("Error: Server Failure.\n");
             exit(EXIT_FAILURE);
-            //Name error
+        //Name error
         case 3:
             printf("Error: Name Error\n");
             exit(EXIT_FAILURE);
-            //Not implemented
+        //Not implemented
         case 4:
             printf("Error: Not implemented\n");
             exit(EXIT_FAILURE);
-            //Refused
+        //Refused
         case 5:
             printf("Error: Refused\n");
             exit(EXIT_FAILURE);
-            //Undefined rcode
+        //Undefined rcode
         default:
             printf("Error: Undefined Error\n");
             exit(EXIT_FAILURE);
@@ -122,14 +156,14 @@ void print_dns_response(dns_message_t* response)
     name[name_length] = '\0';
     
     //Read TYPE of record
-    char* type = malloc(3 * sizeof(char));
-    type[0] = response->buffer[name_length+3];
-    type[1] = response->buffer[name_length+4];
-    type[2] = '\0';
+    uint16_t type;
+    memcpy(&type, &response->buffer[name_length+3], 2);
+    type = ntohs(type);
     
     //Read RDATA
     uint16_t rdlength;
     memcpy(&rdlength, &response->buffer[name_length+11], 2);
+    rdlength = ntohs(rdlength);
     char* rdata = malloc(rdlength * sizeof(char) + 1);
     
     printf("rdlength: %d\n", rdlength);
@@ -139,7 +173,7 @@ void print_dns_response(dns_message_t* response)
     rdata[rdlength] = '\0';
     
     //Print response (will be interpreted by a function taking TYPE, which will determine RDATA)
-    printf("type: %s\n", type);
+    printf("type: %d\n", type);
     printf("Name: %s\n", name);
     printf("RDATA: %s\n", rdata);
 }
