@@ -19,15 +19,15 @@
 //
 uint16_t qtype_value(char* qtype)
 {
-    if (strcmp(qtype, "A"))
+    if (strcmp(qtype, "A") == 0)
         return 1;
-    if (strcmp(qtype, "NS"))
+    if (strcmp(qtype, "NS") == 0)
         return 2;
-    if (strcmp(qtype, "CNAME"))
+    if (strcmp(qtype, "CNAME") == 0)
         return 5;
-    if (strcmp(qtype, "MX"))
+    if (strcmp(qtype, "MX") == 0)
         return 15;
-    if (strcmp(qtype, "TXT"))
+    if (strcmp(qtype, "TXT") == 0)
         return 16;
     return 0;
 }
@@ -47,6 +47,43 @@ char* qtype_name(int qtype)
     if (qtype == 16)
         return "TXT";
     return NULL;
+}
+
+//  Handles the error for the passed DNS RCODE value. If no error, the function returns
+//
+void handle_rcode(uint8_t rcode)
+{
+    //Check rcode and print appropriate error message
+    switch (rcode)
+    {
+            //No error
+        case 0:
+            break;
+            //Format error
+        case 1:
+            printf("Error: Format Error\n");
+            exit(EXIT_FAILURE);
+            //Server failure
+        case 2:
+            printf("Error: Server Failure.\n");
+            exit(EXIT_FAILURE);
+            //Name error
+        case 3:
+            printf("Error: Name Error\n");
+            exit(EXIT_FAILURE);
+            //Not implemented
+        case 4:
+            printf("Error: Not implemented\n");
+            exit(EXIT_FAILURE);
+            //Refused
+        case 5:
+            printf("Error: Refused\n");
+            exit(EXIT_FAILURE);
+            //Undefined rcode
+        default:
+            printf("Error: Undefined Error\n");
+            exit(EXIT_FAILURE);
+    }
 }
 
 //  Initializes a DNS query message with specified question
@@ -89,43 +126,6 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype_name)
     msg->length = 18 + (uint32_t)qname_length;
     
     return msg;
-}
-
-//  Handles the error for the passed DNS RCODE value. If no error, the function returns
-//
-void handle_rcode(uint8_t rcode)
-{
-    //Check rcode and print appropriate error message
-    switch (rcode)
-    {
-        //No error
-        case 0:
-            break;
-        //Format error
-        case 1:
-            printf("Error: Format Error\n");
-            exit(EXIT_FAILURE);
-        //Server failure
-        case 2:
-            printf("Error: Server Failure.\n");
-            exit(EXIT_FAILURE);
-        //Name error
-        case 3:
-            printf("Error: Name Error\n");
-            exit(EXIT_FAILURE);
-        //Not implemented
-        case 4:
-            printf("Error: Not implemented\n");
-            exit(EXIT_FAILURE);
-        //Refused
-        case 5:
-            printf("Error: Refused\n");
-            exit(EXIT_FAILURE);
-        //Undefined rcode
-        default:
-            printf("Error: Undefined Error\n");
-            exit(EXIT_FAILURE);
-    }
 }
 
 //  Parses a DNS response message and prints it
@@ -173,7 +173,6 @@ void print_dns_response(dns_message_t* response)
     rdata[rdlength] = '\0';
     
     //Print response (will be interpreted by a function taking TYPE, which will determine RDATA)
-    printf("type: %d\n", type);
     printf("Name: %s\n", name);
     printf("RDATA: %s\n", rdata);
 }
