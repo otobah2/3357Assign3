@@ -11,6 +11,7 @@
 //
 
 #include <string.h>
+#include <unistd.h>
 #include "dns_lib.h"
 #include "udp_sockets.h"
 
@@ -23,7 +24,7 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype)
     //Setup Header
     msg->ID = 0;
     msg->flags = 0;
-    msg->qd_count = 1;
+    msg->qd_count = htons(1);
     msg->an_count = 0;
     msg->ns_count = 0;
     msg->ar_count = 0;
