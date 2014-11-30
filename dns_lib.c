@@ -86,6 +86,63 @@ void handle_rcode(uint8_t rcode)
     }
 }
 
+//  Formats the specified domain name into the correct label format for DNS messages
+//
+uint8_t* format_domain_name(char* domain_name)
+{
+    char* label;
+    uint8_t* formatted = malloc(256 * sizeof(char));
+    int i, k = 0, length;
+    
+    //Read labels (delimitted by .) and concatenate them to formatted preceded by their length octet
+    label = strtok(domain_name, ".");
+    do
+    {
+        length = (int) strlen(label);
+        formatted[k] = length;
+        
+        for (i = 0; i < formatted[k]; ++i)
+            formatted[k+i+1] = label[i];
+        
+        k += length + 1;
+        label = strtok(NULL, ".");
+    }
+    while (label != NULL);
+    
+    //Append null character to end of formatted string
+    formatted[k] = '\0';
+    
+    return formatted;
+}
+
+//  Formats the specified DNS name into a readable domain name
+//
+char* format_dns_name(uint8_t* dns_name)
+{
+    char* formatted = malloc(256 * sizeof(char));
+    int i, j = 1, k = 0, length;
+    
+    //Read length octets and copy labels to formatted. Seperate labels by periods.
+    length = dns_name[k];
+    printf("dns_name[0]: %d\n", dns_name[k]);
+    do
+    {
+        for (i = 0; i < length; ++i)
+            formatted[i+k] = dns_name[i+k+j];
+        
+        k += length + 1;
+        length = dns_name[k];
+        formatted[k] = '.';
+        j = 0;
+    }
+    while (length != 0);
+    
+    //Append null character to end of formatted string
+    formatted[k] = '\0';
+    
+    return formatted;
+}
+
 //  Initializes a DNS query message with specified question
 //
 dns_message_t* create_dns_query(char* domain_name, char* qtype_name)
@@ -110,21 +167,19 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype_name)
     }
     
     //Copy domain name in buffer
-    msg->buffer[0] = qname_length;
-    for (int i = 1; i <= qname_length + 1; ++i)
-        msg->buffer[i] = domain_name[i-1];
+    uint8_t* qname = format_domain_name(domain_name);
+    memcpy(&(msg->buffer[0]), qname, qname_length+1);
     
     //Set qtype
     uint16_t qtype = htons(qtype_value(qtype_name));
-    memcpy(&msg->buffer[qname_length+3], &qtype, 2);
+    memcpy(&(msg->buffer[qname_length+3]), &qtype, 2);
     
     //Set qclass
     uint16_t qclass = htons(1);
-    memcpy(&msg->buffer[qname_length+5], &qclass, 2);
+    memcpy(&(msg->buffer[qname_length+5]), &qclass, 2);
     
     //Update length
     msg->length = 18 + (uint32_t)qname_length;
-    
     return msg;
 }
 
@@ -148,12 +203,8 @@ void print_dns_response(dns_message_t* response)
     handle_rcode(rcode);
     
     //Read NAME of record
-    uint8_t name_length = response->buffer[0];
-    char* name = malloc(name_length * sizeof(char) + 1);
-    
-    for (i = 0; i < name_length; ++i)
-        name[i] = response->buffer[i+1];
-    name[name_length] = '\0';
+    char* name = format_dns_name(response->buffer);
+    uint8_t name_length = strlen(name);
     
     //Read TYPE of record
     uint16_t type;
@@ -173,6 +224,7 @@ void print_dns_response(dns_message_t* response)
     rdata[rdlength] = '\0';
     
     //Print response (will be interpreted by a function taking TYPE, which will determine RDATA)
+    printf("namelength: %d\n", name_length);
     printf("Name: %s\n", name);
     printf("RDATA: %s\n", rdata);
 }
