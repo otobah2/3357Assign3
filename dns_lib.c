@@ -166,7 +166,7 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype_name)
     
     //Copy domain name in buffer
     uint8_t* qname = format_domain_name(domain_name);
-    memcpy(&(msg->buffer[0]), qname, qname_length+1);
+    memcpy(&(msg->buffer[0]), qname, qname_length+2);
     
     //Set qtype
     uint16_t qtype = htons(qtype_value(qtype_name));
