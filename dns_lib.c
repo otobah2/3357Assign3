@@ -120,25 +120,23 @@ uint8_t* format_domain_name(char* domain_name)
 char* format_dns_name(uint8_t* dns_name)
 {
     char* formatted = malloc(256 * sizeof(char));
-    int i, j = 1, k = 0, length;
+    int i, k = 0, length;
     
     //Read length octets and copy labels to formatted. Seperate labels by periods.
     length = dns_name[k];
-    printf("dns_name[0]: %d\n", dns_name[k]);
     do
     {
         for (i = 0; i < length; ++i)
-            formatted[i+k] = dns_name[i+k+j];
+            formatted[i+k] = dns_name[i+k+1];
         
         k += length + 1;
         length = dns_name[k];
-        formatted[k] = '.';
-        j = 0;
+        formatted[k-1] = '.';
     }
     while (length != 0);
     
     //Append null character to end of formatted string
-    formatted[k] = '\0';
+    formatted[k-1] = '\0';
     
     return formatted;
 }
@@ -208,15 +206,16 @@ void print_dns_response(dns_message_t* response)
     
     //Read TYPE of record
     uint16_t type;
-    memcpy(&type, &response->buffer[name_length+3], 2);
+    memcpy(&type, &(response->buffer[name_length+3]), 2);
     type = ntohs(type);
     
-    //Read RDATA
+    //Read RDLENGTH
     uint16_t rdlength;
-    memcpy(&rdlength, &response->buffer[name_length+11], 2);
+    memcpy(&rdlength, &(response->buffer[name_length+11]), 2);
     rdlength = ntohs(rdlength);
-    char* rdata = malloc(rdlength * sizeof(char) + 1);
     
+    //Read RDATA
+    char* rdata = malloc(rdlength * sizeof(char) + 1);
     printf("rdlength: %d\n", rdlength);
     
     for (i = 0; i < rdlength; ++i)
@@ -224,7 +223,7 @@ void print_dns_response(dns_message_t* response)
     rdata[rdlength] = '\0';
     
     //Print response (will be interpreted by a function taking TYPE, which will determine RDATA)
-    printf("namelength: %d\n", name_length);
+    printf("Type: %s\n", qtype_name(type));
     printf("Name: %s\n", name);
     printf("RDATA: %s\n", rdata);
 }
