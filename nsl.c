@@ -70,7 +70,13 @@ int main(int argc, char** argv)
   
   //Send DNS query through socket
   query_msg = create_dns_query(query, type);
-  send_message(sockfd, (message_t*)query_msg, &server_address);
+  int ret = send_message(sockfd, (message_t*)query_msg, &server_address);
+  
+  if (ret == -1)
+  {
+    printf("Error: Failed to send through socket\n");
+    exit(EXIT_FAILURE);
+  }
   
   //Receive DNS response
   response_msg = (dns_message_t*) receive_message(sockfd, &server_address);

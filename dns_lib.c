@@ -190,6 +190,8 @@ void print_dns_response(dns_message_t* response)
     uint8_t rcode = response->flags & 0000000000001111;
     uint16_t an_count = ntohs(response->an_count);
     
+    printf("ancount: %d\n", an_count);
+    
     //Check QR to ensure message is a response
     if (qr != 1)
     {
@@ -216,15 +218,16 @@ void print_dns_response(dns_message_t* response)
     
     //Read RDATA
     char* rdata = malloc(rdlength * sizeof(char) + 1);
-    printf("rdlength: %d\n", rdlength);
-    
     for (i = 0; i < rdlength; ++i)
         rdata[i] = response->buffer[name_length+13+i];
     rdata[rdlength] = '\0';
     
     //Print response (will be interpreted by a function taking TYPE, which will determine RDATA)
-    printf("Type: %s\n", qtype_name(type));
+    for (i = 0; i < 50; ++i)
+        printf("buffer[%d]: %d\n",i, response->buffer[i]);
     printf("Name: %s\n", name);
+    printf("Type: %s\n", qtype_name(type));
+    printf("rdlength: %d\n", rdlength);
     printf("RDATA: %s\n", rdata);
 }
 
