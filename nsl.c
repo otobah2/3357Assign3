@@ -13,7 +13,9 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "udp_client.h"
+#include "udp_sockets.h"
 #include "dns_lib.h"
 
 int main(int argc, char** argv)

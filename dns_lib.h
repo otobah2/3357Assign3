@@ -12,9 +12,8 @@
 
 #ifndef _dns_lib_h_
 #define _dns_lib_h_
-
+#include <stdint.h>
 #include <stdlib.h>
-
 //This message can be cast to the more general message_t* format defined in udp_sockets library
 //DNS message format
 typedef struct
