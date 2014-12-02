@@ -171,8 +171,6 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype_name)
     //Set qtype
     uint16_t qtype = qtype_value(qtype_name);
     memcpy(&(msg->buffer[qname_length+3]), &qtype, 2);
-    printf("qtype-test[0]: %d\n", msg->buffer[qname_length+3]);
-    printf("qtype-test[1]: %d\n\n", msg->buffer[qname_length+4]);
     
     //Set qclass
     uint16_t qclass = 1;
@@ -208,7 +206,7 @@ void print_dns_response(dns_message_t* response)
     uint16_t type;
     memcpy(&type, &(response->buffer[name_length+3]), 2);
     
-    //Read RDLENGTH
+    //Read TTL
     uint32_t ttl;
     memcpy(&ttl, &(response->buffer[name_length+7]), 4);
     
@@ -217,16 +215,15 @@ void print_dns_response(dns_message_t* response)
     memcpy(&rdlength, &(response->buffer[name_length+11]), 2);
     
     //Read RDATA
-    char* rdata = malloc(rdlength * sizeof(char) + 1);
+    uint8_t* rdata = malloc(rdlength * sizeof(char));
     for (i = 0; i < rdlength; ++i)
         rdata[i] = response->buffer[name_length+13+i];
-    rdata[rdlength] = '\0';
     
     //Print response (will be interpreted by a function taking TYPE, which will determine RDATA)
     for (i = 0; i < 50; ++i)
         printf("buffer[%d]: %d\n",i, response->buffer[i]);
     printf("Name: %s\n", name);
-    printf("ttl: %d\n", ttl);
+    printf("TTL: %d\n", ttl);
     printf("Type: %s\n", qtype_name(type));
     printf("rdlength: %d\n", rdlength);
     printf("RDATA: %s\n", rdata);
