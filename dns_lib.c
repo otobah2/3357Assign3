@@ -169,11 +169,13 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype_name)
     memcpy(&(msg->buffer[0]), qname, qname_length+2);
     
     //Set qtype
-    uint16_t qtype = htons(qtype_value(qtype_name));
+    uint16_t qtype = qtype_value(qtype_name);
     memcpy(&(msg->buffer[qname_length+3]), &qtype, 2);
+    printf("qtype-test[0]: %d\n", msg->buffer[qname_length+3]);
+    printf("qtype-test[1]: %d\n\n", msg->buffer[qname_length+4]);
     
     //Set qclass
-    uint16_t qclass = htons(1);
+    uint16_t qclass = 1;
     memcpy(&(msg->buffer[qname_length+5]), &qclass, 2);
     
     //Update length
@@ -187,17 +189,13 @@ void print_dns_response(dns_message_t* response)
 {
     int i;
     uint8_t qr = response->flags >> 15;
-    uint8_t rcode = response->flags & 0000000000001111;
+    uint8_t rcode = response->flags & 15;
     uint16_t an_count = ntohs(response->an_count);
+    uint16_t flags = response->flags;
     
     printf("ancount: %d\n", an_count);
-    
-    //Check QR to ensure message is a response
-    if (qr != 1)
-    {
-        printf("Error: Invalid Response\n");
-        exit(EXIT_FAILURE);
-    }
+    printf("rcode: %d\n", rcode);
+    printf("flags: %d\n", flags);
     
     //Handle RCODE
     handle_rcode(rcode);
@@ -209,12 +207,14 @@ void print_dns_response(dns_message_t* response)
     //Read TYPE of record
     uint16_t type;
     memcpy(&type, &(response->buffer[name_length+3]), 2);
-    type = ntohs(type);
+    
+    //Read RDLENGTH
+    uint32_t ttl;
+    memcpy(&ttl, &(response->buffer[name_length+7]), 4);
     
     //Read RDLENGTH
     uint16_t rdlength;
     memcpy(&rdlength, &(response->buffer[name_length+11]), 2);
-    rdlength = ntohs(rdlength);
     
     //Read RDATA
     char* rdata = malloc(rdlength * sizeof(char) + 1);
@@ -226,6 +226,7 @@ void print_dns_response(dns_message_t* response)
     for (i = 0; i < 50; ++i)
         printf("buffer[%d]: %d\n",i, response->buffer[i]);
     printf("Name: %s\n", name);
+    printf("ttl: %d\n", ttl);
     printf("Type: %s\n", qtype_name(type));
     printf("rdlength: %d\n", rdlength);
     printf("RDATA: %s\n", rdata);
