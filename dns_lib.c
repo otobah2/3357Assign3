@@ -191,10 +191,6 @@ void print_dns_response(dns_message_t* response)
     uint8_t rcode = flags & 15;
     uint16_t an_count = ntohs(response->an_count);
     
-    printf("ancount: %d\n", an_count);
-    printf("rcode: %d\n", rcode);
-    printf("qr: %d\n", qr);
-    
     //Handle RCODE
     handle_rcode(rcode);
     
@@ -233,18 +229,29 @@ void print_dns_response(dns_message_t* response)
     rdlength = ntohs(rdlength);
     
     //Read RDATA
-    uint8_t* rdata = malloc(rdlength * sizeof(char));
+    uint8_t* rdata = malloc(rdlength * sizeof(char) + 1);
     for (i = 0; i < rdlength; ++i)
         rdata[i] = response->buffer[offset_from_name+11+i];
+    rdata[i] = '\0';
+    
+    //for (i = 0; i < 50; ++i)
+    //    printf("buffer[%d]: %d\n",i, response->buffer[i]);
     
     //Print response (will be interpreted by a function taking TYPE, which will determine RDATA)
-    for (i = 0; i < 50; ++i)
-        printf("buffer[%d]: %d\n",i, response->buffer[i]);
+    printf("ancount: %d\n", an_count);
+    printf("rcode: %d\n", rcode);
+    printf("qr: %d\n", qr);
+    
     printf("Name: %s\n", name);
     printf("TTL: %d\n", ttl);
-    printf("Type: %d\n", type);
-    printf("rdlength: %d\n", rdlength);
-    printf("RDATA: %s\n", rdata);
+    printf("Type: %s\n", qtype_name(type));
+    
+    print_rdata(rdata, type);
+}
+
+void print_data(uint8_t* rdata, uint8_t type)
+{
+    
 }
 
 

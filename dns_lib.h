@@ -38,6 +38,7 @@ uint8_t* format_domain_name(char* domain_name);
 char* format_dns_name(uint8_t* dns_name);
 dns_message_t* create_dns_query(char* domain_name, char* qtype);
 void print_dns_response(dns_message_t* response);
+void print_rdata(uint8_t* rdata, uint8_t type);
 
 #endif
 
