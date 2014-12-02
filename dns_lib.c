@@ -186,45 +186,63 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype_name)
 void print_dns_response(dns_message_t* response)
 {
     int i;
-    uint8_t qr = response->flags >> 15;
-    uint8_t rcode = response->flags & 15;
+    uint16_t flags = ntohs(response->flags);
+    uint8_t qr = flags >> 15;
+    uint8_t rcode = flags & 15;
     uint16_t an_count = ntohs(response->an_count);
-    uint16_t flags = response->flags;
     
     printf("ancount: %d\n", an_count);
     printf("rcode: %d\n", rcode);
-    printf("flags: %d\n", flags);
+    printf("qr: %d\n", qr);
     
     //Handle RCODE
     handle_rcode(rcode);
     
-    //Read NAME of record
-    char* name = format_dns_name(response->buffer);
-    uint8_t name_length = strlen(name);
+    //Read QNAME
+    char* qname = format_dns_name(response->buffer);
+    uint8_t name_length = strlen(qname);
     
-    //Read TYPE of record
+    //////Answer
+    //If name is a pointer, name is qname
+    int offset_from_name;
+    char* name;
+    if (response->buffer[name_length+6] >> 6 == 3)
+    {
+        name = qname;
+        offset_from_name = name_length + 7;
+    }
+    else
+    {
+        name = format_dns_name(&(response->buffer[name_length+6]));
+        offset_from_name = name_length + 6 + (int)strlen(name);
+    }
+    
+    //Read TYPE
     uint16_t type;
-    memcpy(&type, &(response->buffer[name_length+3]), 2);
+    memcpy(&type, &(response->buffer[offset_from_name + 1]), 2);
+    type = ntohs(type);
     
     //Read TTL
     uint32_t ttl;
-    memcpy(&ttl, &(response->buffer[name_length+7]), 4);
+    memcpy(&ttl, &(response->buffer[offset_from_name + 5]), 4);
+    ttl = ntohl(ttl);
     
     //Read RDLENGTH
     uint16_t rdlength;
-    memcpy(&rdlength, &(response->buffer[name_length+11]), 2);
+    memcpy(&rdlength, &(response->buffer[offset_from_name + 9]), 2);
+    rdlength = ntohs(rdlength);
     
     //Read RDATA
     uint8_t* rdata = malloc(rdlength * sizeof(char));
     for (i = 0; i < rdlength; ++i)
-        rdata[i] = response->buffer[name_length+13+i];
+        rdata[i] = response->buffer[offset_from_name+11+i];
     
     //Print response (will be interpreted by a function taking TYPE, which will determine RDATA)
     for (i = 0; i < 50; ++i)
         printf("buffer[%d]: %d\n",i, response->buffer[i]);
     printf("Name: %s\n", name);
     printf("TTL: %d\n", ttl);
-    printf("Type: %s\n", qtype_name(type));
+    printf("Type: %d\n", type);
     printf("rdlength: %d\n", rdlength);
     printf("RDATA: %s\n", rdata);
 }
