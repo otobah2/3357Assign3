@@ -201,6 +201,10 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype_name)
     
     //Update length
     msg->length = 18 + (uint32_t)qname_length;
+    
+    //Free memory
+    free(qname);
+    
     return msg;
 }
 
@@ -232,6 +236,7 @@ void print_dns_response(dns_message_t* response)
         pointer_string = format_dns_name(&(response->buffer[pointer-HEADER_OFFSET]), NULL);
         strcat(name, pointer_string);
         offset_from_name = name_length + 7;
+        free(pointer_string);
     }
     //Save appropriate offset from name
     else
@@ -263,6 +268,11 @@ void print_dns_response(dns_message_t* response)
     printf("Name: %s\n", name);
     print_rdata(rdata, type, response->buffer);
     printf("\n");
+    
+    //Free memory
+    free(qname);
+    free(name);
+    free(rdata);
 }
 
 //  Print the provided rdata according to its type. A pointer to the buffer must be provided
@@ -289,6 +299,7 @@ void print_rdata(uint8_t* rdata, uint8_t type, uint8_t* buffer)
         {
             pointer_string = format_dns_name(&(buffer[pointer-HEADER_OFFSET]), NULL);
             strcat(processed_rdata, pointer_string);
+            free(pointer_string);
         }
     }
     
@@ -315,5 +326,7 @@ void print_rdata(uint8_t* rdata, uint8_t type, uint8_t* buffer)
         default:
             break;
     }
+    
+    free(processed_rdata);
 }
 
