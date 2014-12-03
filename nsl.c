@@ -90,7 +90,7 @@ int main(int argc, char** argv)
   //Close socket
   close(sockfd);
   free(query_msg);
-  //free(response_msg);
+  free(response_msg);
 
   exit(EXIT_SUCCESS);
 }
