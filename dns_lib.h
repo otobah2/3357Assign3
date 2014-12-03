@@ -16,6 +16,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define A 1
+#define NS 2
+#define CNAME 5
+#define MX 15
+#define TXT 16
+#define IN 1
+#define HEADER_OFFSET 12
+
 //This message can be cast to the more general message_t* format defined in udp_sockets library
 //DNS message format
 typedef struct
@@ -35,10 +43,10 @@ uint16_t qtype_value(char* qtype);
 char* qtype_name(int qtype);
 void handle_rcode(uint8_t rcode);
 uint8_t* format_domain_name(char* domain_name);
-char* format_dns_name(uint8_t* dns_name);
+char* format_dns_name(uint8_t* dns_name, int* offset);
 dns_message_t* create_dns_query(char* domain_name, char* qtype);
 void print_dns_response(dns_message_t* response);
-void print_rdata(uint8_t* rdata, uint8_t type);
+void print_rdata(uint8_t* rdata, uint8_t type, uint8_t* buffer);
 
 #endif
 

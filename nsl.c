@@ -1,14 +1,14 @@
-/*client.c
- *
- * CS3357a
- * Assignment03
- *
- * Authors: Omar Tobah and Antoine Alarie
- * otobah2@uwo.ca
- * aalarie2@uwo.ca
- *
- * our DNS client for Assignment 03
- */
+//
+//  nsl.c
+//
+//  Computer Science 3357a
+//  Assignment 3
+//
+//  Author: Antoine Alarie (aalarie2@uwo.ca)
+//          Omar Tobah (otobah2@uwo.ca)
+//
+//  DNS client that handles A, NS, CNAME, MX, & TXT queries from the command line
+//
 
 #include <stdio.h>
 #include <getopt.h>
@@ -62,10 +62,13 @@ int main(int argc, char** argv)
   dnsserver = argv[optind];
   query = argv[optind+1];
   
-  /*//print options
-  printf("Type       : %s\n", type);
-  printf("DNS Server : %s\n", dnsserver);
-  printf("Query      : %s\n", query);*/
+  //Check if requested type is supported, if not print error
+  int type_code = qtype_value(type);
+  if (type_code != 1 && type_code != 2 && type_code != 5 && type_code != 15 && type_code != 16)
+  {
+    printf("Error: Unsupported record type\n");
+    exit(EXIT_FAILURE);
+  }
   
   //Create UDP client socket
   int sockfd = create_client_socket(dnsserver, "53", &server_address);

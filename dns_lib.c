@@ -56,32 +56,32 @@ void handle_rcode(uint8_t rcode)
     //Check rcode and print appropriate error message
     switch (rcode)
     {
-            //No error
+        //No error
         case 0:
             break;
-            //Format error
+        //Format error
         case 1:
-            printf("Error: Format Error\n");
+            printf("\nError: Format Error\n\n");
             exit(EXIT_FAILURE);
-            //Server failure
+        //Server failure
         case 2:
-            printf("Error: Server Failure.\n");
+            printf("\nError: Server Failure.\n\n");
             exit(EXIT_FAILURE);
-            //Name error
+        //Name error
         case 3:
-            printf("Error: Name Error\n");
+            printf("\nError: Name Error\n\n");
             exit(EXIT_FAILURE);
-            //Not implemented
+        //Not implemented
         case 4:
-            printf("Error: Not implemented\n");
+            printf("\nError: Not implemented\n\n");
             exit(EXIT_FAILURE);
-            //Refused
+        //Refused
         case 5:
-            printf("Error: Refused\n");
+            printf("\nError: Refused\n\n");
             exit(EXIT_FAILURE);
-            //Undefined rcode
+        //Undefined rcode
         default:
-            printf("Error: Undefined Error\n");
+            printf("\nError: Undefined Error\n\n");
             exit(EXIT_FAILURE);
     }
 }
@@ -117,13 +117,25 @@ uint8_t* format_domain_name(char* domain_name)
 
 //  Formats the specified DNS name into a readable domain name
 //
-char* format_dns_name(uint8_t* dns_name)
+char* format_dns_name(uint8_t* dns_name, int* offset)
 {
     char* formatted = malloc(256 * sizeof(char));
     int i, k = 0, length;
     
     //Read length octets and copy labels to formatted. Seperate labels by periods.
     length = dns_name[k];
+    
+    //If name is only a pointer, return offset from beginning of message
+    if (length >> 6 == 3 && offset != NULL)
+    {
+        memcpy(offset, &dns_name[k], 2);
+        *offset = ntohs(*offset);
+        *offset = *offset & 0x3FFF;
+        formatted[0] = '\0';
+        return formatted;
+    }
+    
+    //Parse domain name until a null character or pointer is encountered
     do
     {
         for (i = 0; i < length; ++i)
@@ -133,7 +145,18 @@ char* format_dns_name(uint8_t* dns_name)
         length = dns_name[k];
         formatted[k-1] = '.';
     }
-    while (length != 0);
+    while (length != 0 && length >> 6 != 3);
+    
+    //If a pointer was encountered replace it by a period and return offset
+    if (length >> 6 == 3 && offset != NULL)
+    {
+        memcpy(offset, &dns_name[k], 2);
+        *offset = ntohs(*offset);
+        *offset = *offset & 0x3FFF;
+        formatted[k-1] = '.';
+        formatted[k] = '\0';
+        return formatted;
+    }
     
     //Append null character to end of formatted string
     formatted[k-1] = '\0';
@@ -185,7 +208,8 @@ dns_message_t* create_dns_query(char* domain_name, char* qtype_name)
 //
 void print_dns_response(dns_message_t* response)
 {
-    int i;
+    int i, pointer = 0;
+    char* pointer_string;
     uint16_t flags = ntohs(response->flags);
     uint8_t qr = flags >> 15;
     uint8_t rcode = flags & 15;
@@ -195,23 +219,23 @@ void print_dns_response(dns_message_t* response)
     handle_rcode(rcode);
     
     //Read QNAME
-    char* qname = format_dns_name(response->buffer);
+    char* qname = format_dns_name(response->buffer, NULL);
     uint8_t name_length = strlen(qname);
     
-    //////Answer
-    //If name is a pointer, name is qname
+    ////////Parse first RR//////////
+    //Read NAME
     int offset_from_name;
-    char* name;
-    if (response->buffer[name_length+6] >> 6 == 3)
+    char* name = format_dns_name(&(response->buffer[name_length+6]), &pointer);
+    //If a pointer was encountered in name, replace it with corresponding string
+    if (pointer != 0)
     {
-        name = qname;
+        pointer_string = format_dns_name(&(response->buffer[pointer-HEADER_OFFSET]), NULL);
+        strcat(name, pointer_string);
         offset_from_name = name_length + 7;
     }
+    //Save appropriate offset from name
     else
-    {
-        name = format_dns_name(&(response->buffer[name_length+6]));
         offset_from_name = name_length + 6 + (int)strlen(name);
-    }
     
     //Read TYPE
     uint16_t type;
@@ -234,24 +258,62 @@ void print_dns_response(dns_message_t* response)
         rdata[i] = response->buffer[offset_from_name+11+i];
     rdata[i] = '\0';
     
-    //for (i = 0; i < 50; ++i)
-    //    printf("buffer[%d]: %d\n",i, response->buffer[i]);
-    
-    //Print response (will be interpreted by a function taking TYPE, which will determine RDATA)
-    printf("ancount: %d\n", an_count);
-    printf("rcode: %d\n", rcode);
-    printf("qr: %d\n", qr);
-    
+    //Print server response
+    printf("\nqr: %d\tancount: %d\ttype: %s \tttl: %d\n\n", qr, an_count, qtype_name(type), ttl);
     printf("Name: %s\n", name);
-    printf("TTL: %d\n", ttl);
-    printf("Type: %s\n", qtype_name(type));
-    
-    print_rdata(rdata, type);
+    print_rdata(rdata, type, response->buffer);
+    printf("\n");
 }
 
-void print_data(uint8_t* rdata, uint8_t type)
+//  Print the provided rdata according to its type. A pointer to the buffer must be provided
+//  to handle pointers in rdata names.
+//
+void print_rdata(uint8_t* rdata, uint8_t type, uint8_t* buffer)
 {
+    int pointer;
+    uint16_t pref;
+    char* processed_rdata = NULL;
+    char* pointer_string;
     
+    //If type is not A, must check for pointers in domain name
+    if (type != A)
+    {
+        //MX is a special case preceded by a 2 byte integer
+        if (type == MX)
+            processed_rdata = format_dns_name(&rdata[2], &pointer);
+        else
+            processed_rdata = format_dns_name(rdata, &pointer);
+        
+        //If a pointer was present, replace it with corresponding string
+        if (pointer != 0)
+        {
+            pointer_string = format_dns_name(&(buffer[pointer-HEADER_OFFSET]), NULL);
+            strcat(processed_rdata, pointer_string);
+        }
+    }
+    
+    //Print processed rdata according to its type
+    switch (type) {
+        case A:
+            printf("Address: %d.%d.%d.%d\n", rdata[0], rdata[1], rdata[2], rdata[3]);
+            break;
+        case NS:
+            printf("Authoritative Host: %s\n", processed_rdata);
+            break;
+        case CNAME:
+            printf("Canonical Name: %s\n", processed_rdata);
+            break;
+        case MX:
+            //Obtain preference of server
+            memcpy(&pref, &rdata[0], 2);
+            pref = ntohs(pref);
+            printf("Mail Server: %s\tpref: %d\n", processed_rdata, pref);
+            break;
+        case TXT:
+            printf("Text: %s\n", processed_rdata);
+            break;
+        default:
+            break;
+    }
 }
-
 
